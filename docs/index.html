@@ -45,6 +45,8 @@
                 <li class="nav-item">
                     <a class="nav-link" href="#1">1.AWS環境準備</a>
                     <a class="nav-link" href="#2">2.プロジェクト作成</a>
+                    <a class="nav-link" href="#3">3.backend実装</a>
+                    <a class="nav-link" href="#3">4.bff実装</a>
                 </li>
             </ul>
         </div>
@@ -131,11 +133,428 @@
         git remote add origin git@github.com:yushin1402/aws-cloudnative-webapp.git
         git push -u origin master
                 </code></pre>
+                <li>docsフォルダをGitHub Pagesで公開する。</li>
             </ol>
         </p>
+        <h1 id="3">3.backend実装</h1>
+        <p>
+            「/api/v1/users」でリクエストを受け付け、ユーザのリストを返却するアプリケーションを実装する。
+        </p>
+        <p>
+            <ol>
+                <li>パッケージを作成する。</li>
+                <table class="table">
+                    <tr>
+                        <th>パッケージ名</th>
+                        <th>説明</th>
+                    </tr>
+                    <tr>
+                        <td>com.example.backend.app.model</td>
+                        <td>Modelクラスを配置する。</td>
+                    </tr>
+                    <tr>
+                        <td>com.example.backend.app.web</td>
+                        <td>Controllerクラスを配置する。</td>
+                    </tr>
+                    <tr>
+                        <td>com.example.backend.config</td>
+                        <td>アプリケーション設定を定義したクラスを配置する。</td>
+                    </tr>
+                </table>
+                <li>Modelクラスの実装</li>
+                ユーザ情報を定義するクラスを実装する。
+                <br>
+                <pre><code>
+        package com.example.backend.app.model;
 
-                
+        import lombok.AllArgsConstructor;
+        import lombok.Builder;
+        import lombok.Data;
+        import lombok.NoArgsConstructor;
+        
+        @AllArgsConstructor
+        @NoArgsConstructor
+        @Builder
+        @Data
+        
+        public class User {
+            
+            private String userId;
+            private String userName;
+        
+        }                                                  
+                </code></pre>
+                <br>
+                Lombokを利用してSpringBoot起動時にコードの自動生成を行っている。
+                <table class="table">
+                    <tr>
+                        <th>ポイント</th>
+                        <th>説明</th>
+                    </tr>
+                    <tr>
+                        <td><code>@AllArgsConstructor</code></td>
+                        <td>
+                            全てのプロパティ(<code>userId</code>と<code>userName</code></code>
+                            を引数にしたコンストラクタを自動生成する。
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>@NoArgsConstructor</code></td>
+                        <td>
+                            引数なしのコンストラクタを自動生成する。
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>@Builder</code></td>
+                        <td>
+                            Builderクラスを自動生成する。Builderを利用することで、メソッドチェーンで値を設定できる。
+                            この後実装するContoroller側での呼び出し方を見るとイメージがつく。<br>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>@Data</code></td>
+                        <td>
+                            getterやsetterなどを自動生成する。
+                        </td>
+                    </tr>
+                </table>
+                <li>Contorollerクラスの実装</li>
+                Userオブジェクトを返却するAPIを作成する。
+                <br>
+                <pre><code>
+        package com.example.backend.app.web;
 
+        import java.util.ArrayList;
+        import java.util.List;
+        
+        import org.springframework.web.bind.annotation.GetMapping;
+        import org.springframework.web.bind.annotation.RequestMapping;
+        import org.springframework.web.bind.annotation.RestController;
+        
+        import com.example.backend.app.model.User;
+        
+        @RestController
+        @RequestMapping("/api/v1")
+        public class BackendRestController {
+        
+            @GetMapping("/users")
+            public List<User> getUsers(){
+                List<User> users = new ArrayList<>();
+                users.add(User.builder().userId("1").userName("Taro").build());
+                users.add(User.builder().userId("2").userName("Jiro").build());
+                return users;
+            }
+        
+        }                                                                           
+                </code></pre>
+                <br>
+                「/api/v1/users」でリクエストに対して、Userオブジェクトを返却している。
+                <table class="table">
+                    <tr>
+                        <th>ポイント</th>
+                        <th>説明</th>
+                    </tr>
+                    <tr>
+                        <td><code>@RestController</code></td>
+                        <td>
+                            RestfulAPIを作成する際に利用するアノテーション。
+                            戻り値をJSONオブジェクトへの変換を行っている。<br>
+                            (<code>@Controller</code>とすればViewが返却される。)
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>@RequestMapping("/api/v1")</code></td>
+                        <td>
+                            メソッドと「/api/v1」URLのマッピング定義をしている。
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>@Builder</code></td>
+                        <td>
+                            Builderクラスを自動生成する。Builderを利用することで、メソッドチェーンで値を設定できる。
+                            この後実装するContoroller側での呼び出し方を見るとイメージがつく。<br>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>User.builder()</code></td>
+                        <td>
+                            Userクラスの<code>@Builder</code>で定義したBuilderメソッドを呼び出している。
+                            Userクラスのプロパティをメソッドチェーンで呼び出し、値を設定している。
+                        </td>
+                    </tr>
+                </table>
+                <li>SpringBoot起動クラスの実装</li>
+                SpringBootを起動する際に呼び出す起動クラスを実装する。
+                このクラスはSpringBootプロジェクトを作成した際にデフォルトでトップパッケージに存在するが、
+                分かりやすさの観点で、com.example.backend.config配下に作成する。
+                <br>
+                <pre><code>
+        package com.example.backend.config;
+
+        import org.springframework.boot.SpringApplication;
+        import org.springframework.boot.autoconfigure.SpringBootApplication;
+        import org.springframework.context.annotation.ComponentScan;
+        
+        @SpringBootApplication
+        public class BackendApplication {
+        
+            public static void main(String[] args) {
+                SpringApplication.run(BackendApplication.class, args);
+            }
+        
+        }                                                                        
+                </code></pre>
+                <table class="table">
+                    <tr>
+                        <th>ポイント</th>
+                        <th>説明</th>
+                    </tr>
+                    <tr>
+                        <td><code>@SpringBootApplication</code></td>
+                        <td>
+                            SpringBootの起動クラスであることを宣言するアノテーション。
+                            com.example.backend.config配下に<br>
+                            <code>@SpringBootApplication</code>を宣言することで、
+                            コンポーネントスキャンの対象がcom.example.backend.config以下の階層に限定される。<br>
+                            従って、com.example.backend.app配下のクラスで
+                            Bean定義を行ってもDIコンテナにBean登録されないため注意すること。<br>
+                            デフォルトのプロジェクトではトップパッケージに<code>@SpringBootApplication</code>
+                            が配置されているため、<br>
+                            全てのクラスでBean定義が可能だが管理が煩雑になるため、com.example.backend.configに<br>
+                            Bean定義を行うクラスをまとめて管理する方針としている。
+                        </td>
+                    </tr>
+                </table>
+                <li>WebMVC設定クラスの実装</li>
+                backendアプリケーションをWebMVCとして動作させるための設定クラスを実装する。
+                <br>
+                <pre><code>
+        package com.example.backend.config;
+        
+        import org.springframework.context.annotation.ComponentScan;
+        import org.springframework.context.annotation.Configuration;
+        import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+        
+        @Configuration
+        @ComponentScan("com.example.backend.app.web")
+        
+        public class MvcConfig implements WebMvcConfigurer {
+        
+        }                                                                              
+                </code></pre>
+                <table class="table">
+                    <tr>
+                        <th>ポイント</th>
+                        <th>説明</th>
+                    </tr>
+                    <tr>
+                        <td>com.example.backend.configへの配置</td>
+                        <td>
+                            このパッケージに配置することでSpringBoot起動時の起動クラス(BackendApplication)によるコンポーネントスキャン対象となる。
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>@Configuration</code></td>
+                        <td>
+                            このアノテーションによりConfigurationクラスであることを宣言する。サンプルコードからは読み取りづらいが、
+                            クラス内にインスタンスを返す<code>@Bean</code>を付与したメソッドを定義すると、Bean定義を行うことが出来る。
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                          <code>@ComponentScan("com.example.backend.app.web")</code>
+                        </td>                       
+                        <td>
+                            引数を指定することで特定のパッケージやクラスをDIすることが出来る。com.example.backend.app.webをDIし、SpringBoot起動時にControllerの
+                            <code>@RestContoroller</code>や<code>GetMapping</code>メソッドをDIし、APIの受け口を作成している。
+                            DIされたインスタンスは、<code>WebMvcConfigurer</code>のdefaultメソッドで利用されていると思慮。
+                        </td>
+                    </tr>
+                </table>
+                <li>application.ymlの設定</li>
+                バックエンドアプリケーションのコンテキストはこのファイルで設定する。
+                <br>
+                <pre><code>
+        server:
+            servlet:
+              context-path: /backend                  
+                </code></pre>
+            </ol>
+        </p>
+        <h1 id="4">4.bff実装</h1>
+        <p>
+            index.htmlのボタンを押下し、APIを呼び出すBFFを作成する。
+        </p>
+        <p>
+            <ol>
+                <li>パッケージを作成する。(backendと同様の構成)</li>
+                <table class="table">
+                    <tr>
+                        <th>パッケージ名</th>
+                        <th>説明</th>
+                    </tr>
+                    <tr>
+                        <td>com.example.backend-for-frontend.app.model</td>
+                        <td>Modelクラスを配置する。</td>
+                    </tr>
+                    <tr>
+                        <td>com.example.backend-for-frontend.app.web</td>
+                        <td>Controllerクラスを配置する。</td>
+                    </tr>
+                    <tr>
+                        <td>com.example.backend.config</td>
+                        <td>アプリケーション設定を定義したクラスを配置する。</td>
+                    </tr>
+                </table>
+                <li>Modelクラスの実装</li>
+                ユーザ情報を定義するクラスを実装する。backendからのレスポンスを格納するため、backendと同じ実装で問題ない。
+                <li>Contorollerクラスの実装</li>
+                この後実装するindex.htmlからの呼び出しに応じてbackendのAPIを呼び出し、レスポンスをmodelに格納してViewに返却する。
+                <br>
+                <pre><code>
+        package com.example.backendforfrontend.app.web;
+
+        import org.springframework.beans.factory.annotation.Autowired;
+        import org.springframework.stereotype.Controller;
+        import org.springframework.ui.Model;
+        import org.springframework.web.bind.annotation.RequestMapping;
+        import org.springframework.web.bind.annotation.RequestMethod;
+        import org.springframework.web.client.RestOperations;
+        
+        import com.example.backendforfrontend.app.model.User;
+        
+        @Controller
+        public class BackendForFrontendController {
+        
+            @Autowired
+            RestOperations restOperations;
+        
+            @RequestMapping(method = RequestMethod.GET, value="users")
+            public String getUsers(Model model) {
+                String service = "/backend/api/v1/users";
+                model.addAttribute("users",
+                        restOperations.getForObject(service, User[].class));
+                return "users";
+            }
+        }
+                </code></pre>
+                <table class="table">
+                    <tr>
+                        <th>ポイント</th>
+                        <th>説明</th>
+                    </tr>
+                    <tr>
+                        <td><code>RestOperations restOperations</code></td>
+                        <td>
+                            org.springframework.web.client.RestOperationsでbackendのAPIを呼び出している。<br>
+                            DTOとレスポンスのバインドをよしなにやってくれるため、便利なライブラリとのこと。<br>
+                            上記のソースでは、backendがUserオブジェクトをJSONで返却しているが、このキー値と<br>
+                            <code>User.class</code>のプロパティを自動でマッピングし、格納している。
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>@RequestMapping(method = RequestMethod.GET, value = "users")/code></td>
+                        <td>
+                            BFFの「/users」に対するGETリクエストを受け付けるとこのアノテーションを付与したメソッドが実行される。<br>
+                            なお、先頭の"/"は省略可能ならしい。
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                          <code>Model model</code>
+                        </td>                       
+                        <td>
+                            <code>RequestMapping</code>の引数に設定された<code>Model model</code>はレスポンスとして<br>
+                            View(=TymeLeaf)に返却されるので、addAttributeしておくと、View側で返却結果を画面に反映出来る。<br>
+                            <code>return "users"</code>がTymeLeaf側でレスポンスを取得する際のキーとなる。                        
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                          <code>String service = "/backend/api/v1/users";</code>
+                        </td>                       
+                        <td>
+                            <code>String service</code>にbackendのURLを定義しているが、ホスト部はあえて記載していない。<br>
+                            実環境ではホスト部はALBのDNS名となり、環境差分である。このため、application.ymlと<code>@ConfigurationProperty</code><br>
+                            を駆使することで、プレフィックス定義として外だしする。
+                        </td>
+                    </tr>
+                </table> 
+                <li>application.ymlの設定</li>
+                変数<code>service</code>にプロパティを定義する。
+                <br>
+                <pre><code>
+        service:
+          dns: http://internal-MA-saitoumsv-private-alb-1666952727.ap-northeast-1.elb.amazonaws.com
+                </code></pre>               
+                <li>ServicePropertiesクラスの実装</li>
+                applicaion.ymlに定義したプロパティを取得するメソッドを実装する。
+                <br>
+                <pre><code>
+        package com.example.backendforfrontend.app.web;
+
+        import org.springframework.boot.context.properties.ConfigurationProperties;
+        import org.springframework.stereotype.Component;
+        
+        @Component
+        @ConfigurationProperties(prefix="service")
+        public class ServiceProperties {
+            
+            private String dns;
+        
+        }                                                                                         
+                </code></pre>
+                <table class="table">
+                    <tr>
+                        <th>ポイント</th>
+                        <th>説明</th>
+                    </tr>
+                    <tr>
+                        <td><code>@Component</code></td>
+                        <td>
+                            環境差分がある設定はDIコンテナにBean登録することで、変更が用意になる。(今回はapplication.ymlの変更だけで対応可能)
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>@ConfigurationProperties(prefix="service")</td>
+                        <td>
+                            このアノテーションを付与したプロパティには引数のprefixが定義される。(prefix以外も定義可能)
+                        </td>
+                    </tr>
+                </table> 
+                <li>MvcConfigクラスの実装</li>
+                ServicePropertyでserviceにプレフィックスを付与する方法をとったが、この場合、URL自体はContorollerごとに実装しなければならない。<br>
+                これを避けるために、SpringBoot起動時に<code>@Data</code>を付与したServicePropertiesをDIし、<br>
+                <code>dns</code>の値を<code>RestOperation</code>に渡し、<code>rootUri</code>に<code>dns</code>の値を格納して<code>RestOperations</code>を<br>
+                ビルドすることで、全てのURLを<code>ServicePropertis</code>にまとめて管理することができる。
+                <br>
+                <pre><code>
+        package com.example.backendforfrontend.config;
+
+        import org.springframework.beans.factory.annotation.Autowired;
+        import org.springframework.boot.web.client.RestTemplateBuilder;
+        import org.springframework.context.annotation.Bean;
+        import org.springframework.context.annotation.ComponentScan;
+        import org.springframework.context.annotation.Configuration;
+        import org.springframework.web.client.RestOperations;
+        import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+        
+        import com.example.backendforfrontend.app.web.ServiceProperties;
+        
+        @ComponentScan("com.example.backendforfrontend.app.web")
+        @Configuration
+        
+        public class MvcConfig implements WebMvcConfigurer {
+            @Autowired
+            ServiceProperties properties;
+            
+            @Bean
+            public RestOperations restOperations(RestTemplateBuilder restTemplateBuilder) {
+                return restTemplateBuilder.rootUri(properties.getDns()).build();
+            }
+        
+        }        
+                </code></pre>
     </div>
 </body>
 </html>

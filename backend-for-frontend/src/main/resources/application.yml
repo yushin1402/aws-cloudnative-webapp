@@ -1,0 +1,2 @@
+service:
+  dns: http://internal-MA-saitoumsv-private-alb-1666952727.ap-northeast-1.elb.amazonaws.com
