@@ -828,6 +828,7 @@
                         (2021/12/01 コメント①)<br>
                         以下のエラー出力によりDockerビルドエラーとなった。<br>
                         <code>Fatal error compiling: invalid target release: 11</code><br>
+                        <ul>
                         MavenプロジェクトをJava11で作成していたのに対して、DockerfileではJava1.8を指定していたことが原因。以下の通り対応した。
                         <ol>
                             <li>pom.xmlの修正</li>
@@ -869,7 +870,12 @@
                               この際、src/test/java配下のBackendApplicationTestsも併せて、src/main/javaと構成をそろえて、com.example.backend.configに移動する必要があった。
                               なお、Dockerビルド時にエラーが発生すると大幅な時間ログとなるため、STS上で先にビルドテストをするべきだった。mavenビルドを選択し、Goalに「package」と設定して実行すると
                               jarパッケージのビルドをテスト出来る。
-                        </ol>
+                            </ul>
+                            </ol>
+                        <li>以下コマンドで作成したDockerイメージをDockerHubへのプッシュする。</li>
+                        <code>docker login</code><br>
+                        <code>docker push yushin1402/aws-cloudnative-webapp-backend:latests</code><br>
+                        <code>docker push yushin1402/aws-cloudnative-webapp-backend-for-frontend:latests</code>
                     </ol>
                 </p>
 
