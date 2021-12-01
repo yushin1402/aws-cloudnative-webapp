@@ -823,7 +823,53 @@
                         <code>cd aws-cloudnative-webapp</code>
                         <li>以下コマンドでDOckerイメージを作成</li>
                         <code>docker build backend/ -t yushin1402/aws-cloudnative-webapp-backend:latests</code><br>
-                        <code>docker build backend/ -t yushin1402/aws-cloudnative-webapp-backend-for-frontend:latests</code>
+                        <code>docker build backend-for-frontend/ -t yushin1402/aws-cloudnative-webapp-backend-for-frontend:latests</code>
+                        <br>
+                        (2021/12/01 コメント①)<br>
+                        以下のエラー出力によりDockerビルドエラーとなった。<br>
+                        <code>Fatal error compiling: invalid target release: 11</code><br>
+                        MavenプロジェクトをJava11で作成していたのに対して、DockerfileではJava1.8を指定していたことが原因。以下の通り対応した。
+                        <ol>
+                            <li>pom.xmlの修正</li>
+                            SpringBootの利用JavaとMavenビルドの利用Javaを1.8に修正した。
+                            <br>
+                            [SpringBootの利用Java(修正)]
+                            <pre><code>
+    	&lt;properties&gt;
+    		&lt;java.version&gt;1.8&lt;/java.version&gt;
+    	&lt;/properties&gt;
+                            </code></pre>
+                            <br>
+                            [Mavenビルドの利用Java(追記)]
+                            <br>
+                            <pre><code>
+        &lt;plugin&gt;
+        	&lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+        	&lt;artifactId&gt;maven-compiler-plugin&lt;/artifactId&gt;
+        	&lt;configuration&gt;
+        		&lt;source&gt;1.8&lt;/source&gt;
+        		&lt;target&gt;1.8&lt;/target&gt;
+        	&lt;/configuration&gt;
+        &lt;/plugin&gt;
+                            </code></pre>
+                            <li>Dockerイメージの削除</li>
+                            作成済みのDockerイメージにキャッシュが残っているため、以下コマンドで削除した。<br>
+                            <code>docker rmi -f [イメージID]</code><br>
+                            ※Dockerイメージはレイヤ管理されており、再作成すると差分のみ吸収される仕組みのため、
+                              pom.xmlだけ修正しても生成済みのmavenプラグインのキャッシュは削除されない。<br>
+                              (2021/12/01 コメント②)<br>
+                              コメント①解決後、別のエラーが発生。<br>
+                              <pre><code>
+        [ERROR] com.example.backend.BackendApplicationTests  Time elapsed: 1.005 s  <<< ERROR!
+        java.lang.IllegalStateException: Unable to find a @SpringBootConfiguration, you need to use @ContextConfiguration or @SpringBootTest(classes=...) with your test
+                              </code></pre>
+                              <br>
+                              Mavenビルド時に自動でテストコードが実行されるが、その際に<code>@SpringBootConfiguration</code>が記載されたコードを発見できず、起動クラスを特定できないエラーとなっている。
+                              原因は、起動クラスをデフォルトのcom.eample.backend配下ではなく、com.example.backend.configに移動したこと。
+                              この際、src/test/java配下のBackendApplicationTestsも併せて、src/main/javaと構成をそろえて、com.example.backend.configに移動する必要があった。
+                              なお、Dockerビルド時にエラーが発生すると大幅な時間ログとなるため、STS上で先にビルドテストをするべきだった。mavenビルドを選択し、Goalに「package」と設定して実行すると
+                              jarパッケージのビルドをテスト出来る。
+                        </ol>
                     </ol>
                 </p>
 
