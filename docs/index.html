@@ -31,7 +31,7 @@
             width: "10px";
             height: "10px";
         }
-        p{
+        div{
             font-size: large;
         }
     </style>
@@ -39,14 +39,16 @@
 
 <body>
     <nav class="navbar navbar-expand-md navbar-dark bg-primary fixed-top p-1 ">
-        <a class="navbar-brand" href>CloudNativeAPP(BFF編)</a>
+        <a class="navbar-brand" href>CloudNativeAPP<br>(フロントアプリ編)</a>
         <div class="collapse navbar-collapse " style="line-height: 0.5em"> 
             <ul class="navbar-nav" >
                 <li class="nav-item">
                     <a class="nav-link" href="#1">1.AWS環境準備</a>
                     <a class="nav-link" href="#2">2.プロジェクト作成</a>
                     <a class="nav-link" href="#3">3.backend実装</a>
-                    <a class="nav-link" href="#3">4.bff実装</a>
+                    <a class="nav-link" href="#4">4.bff実装</a>
+                    <a class="nav-link" href="#5">5.view実装</a>
+                    <a class="nav-link" href="#6">6.Dockerコンテナ作成/DockerHubへのプッシュ</a>
                 </li>
             </ul>
         </div>
@@ -555,6 +557,249 @@
         
         }        
                 </code></pre>
+            </ol>
+        </p>
+        <h1 id="5">5.view実装</h1>
+        <p>
+            backendを呼び出すviewを実装する。viewにはThymeLeafを利用する。
+            <ol>
+                <li>index.htmlの実装</li>
+                本アプリのトップ画面を表示するindex.htmlを作成する。<br>
+                SpringBootにおいて、静的ファイルの格納パスは以下の通り定められている。
+                <table class="table">
+                    <tr>
+                        <th>検索順番</th>
+                        <th>格納パス</th>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>src/main/resources/META-INF/resources/</td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td>src/main/resources/</td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td>src/main/resources/static/</td>
+                    </tr>
+                    <tr>
+                        <td>4</td>
+                        <td>src/main/resources/public/</td>
+                    </tr>
+                </table>
+                <p>
+                    (※)各フォルダで同じ名前のHTMLファイルが存在する場合は、検索順番が
+                    最も低いファイル(一番最初に検索されたファイル)が返却される。
+                </p>
+
+                <p>
+                    src/main/resources/META-INF/resources/とsrc/main/resources/には設定ファイルも格納されているため、htmlファイルを格納するのは好ましくない。
+                    今回はresources/static配下にindex.htmlファイルを格納する。<br>
+                    index.htmlのコードは以下の通り。
+                </p>
+                <pre><code>
+        &lt;!DOCTYPE html&gt;
+        &lt;html lang="ja"&gt;
+        &lt;head&gt;
+            &lt;meta charset="utf-8"&gt;
+            &lt;meta http-equiv="X-UA-Compatible" content="IE=edge"&gt;
+            &lt;meta name="viewport" content="width=device-width, initial-scale=1"&gt;
+            &lt;title&gt;Index&lt;/title&gt;
+            &lt;link rel="stylesheet" href="static/css/flex.css" media="(min-width: 1280px)"&gt;
+            &lt;link rel="stylesheet" href="static/css/flex_mobile.css" media="(min-width: 320px) and (max-width: 767px)"&gt;
+            &lt;link rel="stylesheet" href="static/css/flex_tablet.css" media="(min-width: 768px) and (max-width: 1279px)"&gt;
+            &lt;link rel="stylesheet" href="static/css/index.css" media="(min-width: 1280px)"&gt;
+            &lt;link rel="stylesheet" href="static/css/index_mobile.css" media="(min-width: 320px) and (max-width: 767px)"&gt;
+            &lt;link rel="stylesheet" href="static/css/index_tablet.css" media="(min-width: 768px) and (max-width: 1279px)"&gt;
+            &lt;script type="text/javascript" src="webjars/jquery/jquery.js"&gt;&lt;/script&gt;        
+        &lt;/head&gt;
+        &lt;body&gt;
+        &lt;h1&gt;Hello! AWS ECS sample!&lt;/h1&gt;
+        &lt;h2&gt;Please call backend service.&lt;/h2&gt;
+        &lt;form id="form" action="users" method="get"&gt;
+            &lt;button id="confrim" name="confrim" class="main-button" type="submit" value="Submit"&gt;Call backend service&lt;/button&gt;
+        &lt;/form&gt;
+        &lt;/body&gt;
+        &lt;/html&gt;
+    </code></pre>
+        <br>
+        <table class="table">
+            <tr>
+                <th>ポイント</th>
+                <th>説明</th>
+            </tr>
+            <tr>
+                <td><code>action="users"</code></td>
+                <td>URLパス(相対パス)を表す。backedn-front-endのコントローラ定義と
+                    <br>合わせる必要がある。
+                </td>
+            </tr>
+            <tr>
+                <td><code>method="get"</code></td>
+                <td>
+                    form送信する際のメソッドを定義。backend-for-frontendコントローラ定義と
+                    <br>合わせる必要がある。
+                </td>
+            </tr>
+        </table>
+            <li>users.htmlの作成</li>
+            <p>
+                index.htmlからユーザ情報をフォーム送信したのち、backend-for-frontendとbackendにより処理された結果を
+                htmlとして、ブラウザに返却する。このhtml(users.html)を作成する。users.htmlには、backend-for-frontendの
+                返却オブジェクトを組み込むことで、ユーザ情報をページに反映する。
+            </p>
+            <pre><code>
+        &lt;!DOCTYPE HTML&gt;
+        &lt;html xmlns:th="http://www.thymeleaf.org" lang="ja"&gt;
+        &lt;head&gt;
+            &lt;title&gt;Hello! Thymeleaf&lt;/title&gt;
+            &lt;meta http-equiv="X-UA-Compatible" content="IE=edge"&gt;
+            &lt;meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /&gt;
+            &lt;meta name="viewport" content="width=device-width, initial-scale=1"&gt;
+            &lt;link rel="stylesheet" href="static/css/flex.css" media="(min-width: 1280px)"&gt;
+            &lt;link rel="stylesheet" href="static/css/flex_mobile.css" media="(min-width: 320px) and (max-width: 767px)"&gt;
+            &lt;link rel="stylesheet" href="static/css/flex_tablet.css" media="(min-width: 768px) and (max-width: 1279px)"&gt;
+            &lt;link rel="stylesheet" href="static/css/users.css" media="(min-width: 1280px)"&gt;
+            &lt;link rel="stylesheet" href="static/css/users_mobile.css" media="(min-width: 320px) and (max-width: 767px)"&gt;
+            &lt;link rel="stylesheet" href="static/css/users_tablet.css" media="(min-width: 768px) and (max-width: 1279px)"&gt;
+            &lt;script type="text/javascript" src="webjars/jquery/jquery.js"&gt;&lt;/script&gt;
+        &lt;/head&gt;
+        &lt;body&gt;
+        &lt;h1&gt;Hello! AWS ECS sample!&lt;/h1&gt;
+        &lt;table&gt;
+            &lt;thead&gt;
+            &lt;tr&gt;
+                &lt;th&gt;No&lt;/th&gt;
+                &lt;th&gt;User ID&lt;/th&gt;
+                &lt;th&gt;User Name&lt;/th&gt;
+            &lt;/tr&gt;
+            &lt;/thead&gt;
+            &lt;tbody&gt;
+            &lt;tr th:each="user, status : ${users}"&gt;
+                &lt;td th:text="${status.count}"&gt;&lt;/td&gt;
+                &lt;td th:text="${user.userId}"&gt;&lt;/td&gt;
+                &lt;td th:text="${user.userName}"&gt;&lt;/td&gt;
+            &lt;/tr&gt;
+            &lt;/tbody&gt;
+        &lt;/table&gt;
+        &lt;/body&gt;
+        &lt;/html&gt;
+            </code></pre>
+            <table class="table">
+                <tr>
+                    <th>ポイント</th>
+                    <th>説明</th>
+                </tr>
+                <tr>
+                    <td>配置場所</td>
+                    <td>
+                        backend-for-frontendが返却する戻り値を組み込んだhtmlは、SpringBootのビューテンプレートエンジンで生成する。
+                        このため、users.htmlはsrc/main/resources/templates配下に作成しなければならない。
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>tr th:each="user, status : ${users}"</code></td>
+                    <td>
+                        th:each属性はThymeLeafの繰り返し構文となる。構文は以下。<br>
+                        <ul><code>th:each="変数名, ステータス変数名 : コレクション"</code></ul>
+                        上記のコードでは繰り返し構文により、<code>${users}</code>(BackendForFrontendControllerクラスから渡されたmodel)
+                        のエンティティ数分だけ、テーブルタグ内のtdタグを繰り返す処理となっている。なお、ステータス変数は、ThymeLeafが独自に持っているステータス情報で、
+                        ${status.count}は現在の番号(繰り返しが何回目かの番号)を表示する。
+                    </td>
+                </tr>
+            </table>
+            </ol>
+        </p>
+        <h1 id="6">6.Dockerコンテナ作成/DockerHubへのプッシュ</h1>
+        <p>
+            前項までで実装したアプリをDockerコンテナ化し、DockerHubへプッシュする。
+            <ol>
+                <li>Dockerファイルの作成</li>
+                <p>
+                    backendプロジェクトとbackend-for-frontendプロジェクトそれぞれについて、Dockerファイルを作成する。<br>
+                </p>
+                    [backendプロジェクトDockerファイル]
+                    <br>
+                    <pre><code>
+        # Dockerfile for sample service using embedded tomcat server
+        FROM centos:centos7
+        MAINTAINER yushin1402
+        
+        RUN yum install -y \
+            java-1.8.0-openjdk \
+            java-1.8.0-openjdk-devel \
+            wget tar iproute git
+        
+        RUN wget http://repos.fedorapeople.org/repos/dchen/apache-maven/epel-apache-maven.repo -O /etc/yum.repos.d/epel-apache-maven.repo
+        RUN sed -i s/\$releasever/6/g /etc/yum.repos.d/epel-apache-maven.repo
+        RUN yum install -y apache-maven
+        ENV JAVA_HOME /etc/alternatives/jre
+        RUN git clone https://github.com/yushin1402/aws-cloudnative-webapp.git /usr/local/aws-cloudnative-webapp
+        RUN mvn install -f /usr/local/aws-cloudnative-webapp/pom.xml
+        RUN cp /etc/localtime /etc/localtime.org
+        RUN ln -sf  /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
+        EXPOSE 8080
+
+        CMD java -jar -Dspring.profiles.active=production /usr/local/aws-cloudnative-webapp/backend/target/aws-cloudnative-webapp-backend-0.0.1-SNAPSHOT.jar
+                    
+                    </code></pre>
+                    [backend-for-frontendプロジェクトDockerファイル]                    
+                    <pre><code>
+        # Dockerfile for sample service using embedded tomcat server
+
+        FROM centos:centos7
+        MAINTAINER debugroom
+        
+        RUN yum install -y \
+               java-1.8.0-openjdk \
+               java-1.8.0-openjdk-devel \
+               wget tar iproute git
+        
+        RUN wget http://repos.fedorapeople.org/repos/dchen/apache-maven/epel-apache-maven.repo -O /etc/yum.repos.d/epel-apache-maven.repo
+        RUN sed -i s/\$releasever/6/g /etc/yum.repos.d/epel-apache-maven.repo
+        RUN yum install -y apache-maven
+        ENV JAVA_HOME /etc/alternatives/jre
+        RUN git clone https://github.com/yushin1402/aws-cloudnative-webapp.git /usr/local/aws-cloudnative-webapp
+        RUN mvn install -f /usr/local/aws-cloudnative-webapp/pom.xml
+        
+        RUN cp /etc/localtime /etc/localtime.org
+        
+        RUN ln -sf  /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
+        
+        EXPOSE 8080
+        
+        CMD java -jar -Dspring.profiles.active=production /usr/local/aws-cloudnative-webapp/backend-for-frontend/target/aws-cloudnative-webapp-backend-for-frontend-0.0.1-SNAPSHOT.jar
+                    </code></pre>
+                    <p>
+                        (※)Dockerコマンドの詳細は以下ページを参照
+                        <br>
+                        <a href src="https://qiita.com/FumiyaShibusawa/items/a0be39d28139a044157d">https://qiita.com/FumiyaShibusawa/items/a0be39d28139a044157d</a>
+                    </p>
+                    <table class="table">
+                        <tr>
+                            <th>ポイント</th>
+                            <th>説明</th>
+                        </tr>
+                        <tr>ビルド処理概要</tr>
+                        <tr>
+                            <ol>
+                                <li>openJDKインストール</li>
+                                <li>Mavenパッケージダウンロード</li>
+                                <li>Mavenパッケージのバージョン変更(6に指定)</li>
+                                <li>Mavenインストール</li>
+                                <li>JAVA_HOME設定</li>
+                                <li>GitHubからプロジェクトをクローン</li>
+                                <li>Mavenビルド</li>
+                                <li>タイムゾーン設定ファイルバックアップ</li>
+                                <li>タイムゾーンを日本時間に変更</li>
+                                <li>コンテナリッスンポートを8080に設定</li>
+                                <li>ビルドしたMavenプロジェクトを実行</li>
+                            </ol>
+                        </tr>
+                    </table>
+            </ol>
+        </p>
     </div>
 </body>
 </html>
