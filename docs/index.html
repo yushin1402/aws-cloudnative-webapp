@@ -48,7 +48,7 @@
                     <a class="nav-link" href="#3">3.backend実装</a>
                     <a class="nav-link" href="#4">4.bff実装</a>
                     <a class="nav-link" href="#5">5.view実装</a>
-                    <a class="nav-link" href="#6">6.Dockerコンテナ作成/DockerHubへのプッシュ</a>
+                    <a class="nav-link" href="#6">6.DockerHubへのプッシュ</a>
                 </li>
             </ul>
         </div>
@@ -781,23 +781,53 @@
                             <th>ポイント</th>
                             <th>説明</th>
                         </tr>
-                        <tr>ビルド処理概要</tr>
                         <tr>
-                            <ol>
-                                <li>openJDKインストール</li>
-                                <li>Mavenパッケージダウンロード</li>
-                                <li>Mavenパッケージのバージョン変更(6に指定)</li>
-                                <li>Mavenインストール</li>
-                                <li>JAVA_HOME設定</li>
-                                <li>GitHubからプロジェクトをクローン</li>
-                                <li>Mavenビルド</li>
-                                <li>タイムゾーン設定ファイルバックアップ</li>
-                                <li>タイムゾーンを日本時間に変更</li>
-                                <li>コンテナリッスンポートを8080に設定</li>
-                                <li>ビルドしたMavenプロジェクトを実行</li>
-                            </ol>
+                            <td>ビルド処理概要</td>
+                            <td>
+                                <ol>
+                                    <li>openJDKインストール</li>
+                                    <li>Mavenパッケージダウンロード</li>
+                                    <li>Mavenパッケージのバージョン変更(6に指定)</li>
+                                    <li>Mavenインストール</li>
+                                    <li>JAVA_HOME設定</li>
+                                    <li>GitHubからプロジェクトをクローン</li>
+                                    <li>Mavenビルド</li>
+                                    <li>タイムゾーン設定ファイルバックアップ</li>
+                                    <li>タイムゾーンを日本時間に変更</li>
+                                    <li>コンテナリッスンポートを8080に設定</li>
+                                    <li>ビルドしたMavenプロジェクトを実行</li>
+                                </ol>
+                            </td>
                         </tr>
                     </table>
+                <li>GitHubへのプッシュ</li>
+                <p>backendプロジェクトとbackend-for-frontendプロジェクトをGitHubにプッシュする。</p>
+                <li>Dockerイメージ作成</li>
+                <p>
+                    Dockerインストール環境でDockerイメージを作成する。今回はVirtualBox上のCentOS7でDockerイメージを作成。(Dockerインストール作業の記載は割愛)
+                    <ol>
+                        <li>以下コマンドでCentOS上にGitをインストール</li>
+                        <code>sudo yum -y install wget make gcc perl-ExtUtils-MakeMaker curl-devel expat-devel gettext-devel openssl-devel zlib-devel autoconf</code><br>
+                        <code>sudo wget https://www.kernel.org/pub/software/scm/git/git-2.9.5.tar.gz --no-check-certificate</code><br>
+                        <code>sudo tar xvzf git-2.9.5.tar.gz</code><br>
+                        <code>cd git-2.9.5</code><br>
+                        <code>sudo make configure</code><br>
+                        <code>sudo ./configure --prefix=/usr</code><br>
+                        <code>sudo make install</code><br>
+                        <code>git --version</code><br>
+                        (※)最後にgitのバージョンが出力されていればOK<br>
+                        (※)<code>sudo ./configure --prefix=/usr</code>については以下ページを参照。インストールディレクトリをmakeのコンフィグに定義しているらしい。(/usrは非推奨と書いてあるが。。。)<br>
+                        <a href src="https://atmarkit.itmedia.co.jp/ait/articles/1107/01/news139.html">https://atmarkit.itmedia.co.jp/ait/articles/1107/01/news139.html</a>                        
+                        <li>以下コマンドでGitHub上のプロジェクト取得</li> 
+                        <code>sudo git clone https://github.com/yushin1402/aws-cloudnative-webapp.git</code><br>
+                        <code>cd aws-cloudnative-webapp</code>
+                        <li>以下コマンドでDOckerイメージを作成</li>
+                        <code>docker build backend/ -t yushin1402/aws-cloudnative-webapp-backend:latests</code><br>
+                        <code>docker build backend/ -t yushin1402/aws-cloudnative-webapp-backend-for-frontend:latests</code>
+                    </ol>
+                </p>
+
+
             </ol>
         </p>
     </div>
