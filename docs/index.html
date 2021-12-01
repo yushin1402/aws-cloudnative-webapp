@@ -835,6 +835,7 @@
                             SpringBootの利用JavaとMavenビルドの利用Javaを1.8に修正した。
                             <br>
                             [SpringBootの利用Java(修正)]
+                            <br>
                             <pre><code>
     	&lt;properties&gt;
     		&lt;java.version&gt;1.8&lt;/java.version&gt;
@@ -868,7 +869,7 @@
                               Mavenビルド時に自動でテストコードが実行されるが、その際に<code>@SpringBootConfiguration</code>が記載されたコードを発見できず、起動クラスを特定できないエラーとなっている。
                               原因は、起動クラスをデフォルトのcom.eample.backend配下ではなく、com.example.backend.configに移動したこと。
                               この際、src/test/java配下のBackendApplicationTestsも併せて、src/main/javaと構成をそろえて、com.example.backend.configに移動する必要があった。
-                              なお、Dockerビルド時にエラーが発生すると大幅な時間ログとなるため、STS上で先にビルドテストをするべきだった。mavenビルドを選択し、Goalに「package」と設定して実行すると
+                              なお、Dockerビルド時にエラーが発生すると大幅な時間ロスとなるため、STS上で先にビルドテストをするべきだった。mavenビルドを選択し、Goalに「package」と設定して実行すると
                               jarパッケージのビルドをテスト出来る。
                             </ul>
                             </ol>
