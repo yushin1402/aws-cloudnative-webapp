@@ -49,6 +49,7 @@
                     <a class="nav-link" href="#4">4.bff実装</a>
                     <a class="nav-link" href="#5">5.view実装</a>
                     <a class="nav-link" href="#6">6.DockerHubへのプッシュ</a>
+                    <a class="nav-link" href="#7">7.ECSクラスタ作成</a>
                 </li>
             </ul>
         </div>
@@ -879,9 +880,60 @@
                         <code>docker push yushin1402/aws-cloudnative-webapp-backend-for-frontend:latests</code>
                     </ol>
                 </p>
-
-
             </ol>
+            <h1 id="7">7.ECSクラスタ作成</h1>
+            <p>
+                Dockerコンテナを稼働させるECSクラスタを作成する。
+                <ol>
+                    <li>AWS ECSサービスからクラスタメニューを選択する。</li>
+                    <li>クラスターの作成を押下する。</li>
+                    <li>クラスターテンプレートの選択で、EC2+ネットワーキングを選択する。</li>
+                    <li>クラスタの設定を行う。ポイントのみを以下に記載する。</li>
+                    <table class="table">
+                        <tr>
+                            <th>設定項目</th>
+                            <th>設定値</th>
+                        </tr> 
+                        <tr>
+                            <td>パブリックIPの自動割り当て</td>
+                            <td>インターネットゲートウェイ経由でアクセスするため、無効とする。</td>
+                        </tr>
+                        <tr>
+                            <td>セキュリティグループ</td>
+                            <td><ol>
+                                <li>作業端末からのSSH、ALBからの通信を許可する。</li>
+                                <li>ALBとの通信には動的ポーリングを利用するため、AKBにアタッチしたSGから32768 - 61000を許可する。</li>
+                                <li>動的ポーリングを設定すると、クラスタ上のDockerコンテナに対して自動でポートを割り当て、ALBと接続するマッピング管理をECSがマネージドに行ってくれる理解。</li>
+                            </ol></td>
+                        </tr>
+                    </table>
+                    <li>ECSタスク定義を以下の通り行う。</li>
+                    <ul><ol>
+                        <li>ECSタスク実行用のIAMロール割り当て</li>
+                        <p>
+                            IAMサービス→ロール→ロールを作成→Elastic Container Service→ユースケースの選択→Elastic Container Serviceタスクを選択する。<br>
+                            AmazonECSTaskExecutionRolePolicyを選択し、適当なロール名を指定して完了する。<br>
+                            ロールは今後、必要に応じて追加していく方針とする。
+                        </p>
+                        <li>ECSの新しいタスク定義を作成する。起動タイプの互換性の選択はEC2を選択する。</li>
+                        <li>dockerリポジトリの設定、リソース設定、ポートマッピング設定などを行う。ポートマッピングは動的ポーリングを行うためソースを0にする。宛先はSpringの8080ポートに設定する。</li>
+                    </ol></ul>
+                    <li>ECSサービス起動を以下の通り行う。</li>
+                    <ul><ol>
+                        <li>AmazonEC2ContainerServiceRoleを付与したIAMRoleを作成する。</li>
+                        <p>
+                            IAMサービス→ロール→ロールを作成→Elastic Container Service→ユースケースの選択→Elastic Container Serviceタスクを選択する。<br>
+                            AmazonECSTaskExecutionRolePolicyを選択し、適当なロール名を指定して完了する。<br>
+                            ロールは今後、必要に応じて追加していく方針とする。
+                        </p>
+                        <li>ECSの新しいタスク定義を作成する。起動タイプの互換性の選択はEC2を選択する。</li>
+                        <li>dockerリポジトリの設定、リソース設定、ポートマッピング設定などを行う。ポートマッピングは動的ポーリングを行うためソースを0にする。宛先はSpringの8080ポートに設定する。</li>
+                        <li>ECSメニューからクラスタを押下する。</li>
+                        <li>作成したクラスタを指定する。</li>
+                        <li>サービスタグの作成を押下する。</li>
+                    </ol></ul>
+                </ol>
+            </p>
         </p>
     </div>
 </body>
