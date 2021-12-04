@@ -21,4 +21,4 @@ RUN ln -sf  /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
 
 EXPOSE 8080
 
-CMD java -jar -Dspring.profiles.active=production /usr/local/aws-cloudnative-webapp-backend-for-frontend/target/aws-cloudnative-webapp-backend-for-frontend-0.0.1-SNAPSHOT.jar
+CMD java -jar -Dspring.profiles.active=production /usr/local/aws-cloudnative-webapp/backend-for-frontend/target/backend-for-frontend-0.0.1-SNAPSHOT.jar
