@@ -896,14 +896,21 @@
                         </tr> 
                         <tr>
                             <td>パブリックIPの自動割り当て</td>
-                            <td>インターネットゲートウェイ経由でアクセスするため、無効とする。</td>
+                            <td>クラスタにECSインスタンスを登録する際にパブリックIPが必要となるため、割り当てる。
+                                (パブリックサブネットのデフォルトゲートウェイをインターネットゲートウェイに設定していたため、自動割り当てを無効にしても接続出来る認識だったが、上手くいかず。。。)</td>
                         </tr>
                         <tr>
                             <td>セキュリティグループ</td>
                             <td><ol>
-                                <li>作業端末からのSSH、ALBからの通信を許可する。</li>
+                                <li>ECSクラスタを構成するEC2インスタンスに対するセキュリティグループに作業端末からのSSH、ALBからの通信を許可する。</li>
                                 <li>ALBとの通信には動的ポーリングを利用するため、AKBにアタッチしたSGから32768 - 61000を許可する。</li>
                                 <li>動的ポーリングを設定すると、クラスタ上のDockerコンテナに対して自動でポートを割り当て、ALBと接続するマッピング管理をECSがマネージドに行ってくれる理解。</li>
+                                (2021/12/04 コメント)<br>
+                                ECSインスタンス上のDockerコンテナの起動ポート番号が～十秒ごとにインクリメントされており、ALBがそのインクリメントを検知し、ルーティング先の
+                                ポート番号を動的に変更している様子がターゲットグループのヘルスチェック画面から分かった。(この処理にどのような意味があるかは不明。。セキュリティ対策？)
+                                <br>
+                                <img class="img-fluid" src="image/aws-alb1.png">
+                                <br>↑↑上記のヘルスチェック先ポートが～十秒おきに更新されているようが確認できた。
                             </ol></td>
                         </tr>
                     </table>
@@ -931,6 +938,70 @@
                         <li>ECSメニューからクラスタを押下する。</li>
                         <li>作成したクラスタを指定する。</li>
                         <li>サービスタグの作成を押下する。</li>
+                        <li>以下の通り設定する。</li>
+                        <ul><ol type="a">
+                            <li>起動タイプはEC2とする。</li>
+                            <li>タスク定義は先ほど作成したもの</li>
+                            <li>クラスタも先ほど作成したもの</li>
+                            <li>サービス名は任意</li>
+                            <li>サービスタイプはDAEMON(クラスタのインスタンス数に応じてコンテナが自動増減する。REPLICAは指定したタスクの数で固定数のコンテナ起動</li>
+                            <li>タスクの数はコンテナの数を意味する。検証目的のため、1にする</li>
+                        </ol></ul>
+                    </ol></ul>
+                    <li>起動後の確認を以下の通り行った。</li>
+                    <ul><ol>
+                        <li>ECSサービスの画面で、ECSが起動状態になっていること。</li>
+                        <li>ECSインスタンスにログインし、環境上で挙動を確認した。</li>
+                        <br>
+                        [Dockerプロセス確認]
+                        <br>
+                        <pre><code>
+            [root@ip-10-2-9-206 ecs]# docker ps
+            CONTAINER ID   IMAGE                                                    COMMAND                  CREATED          STATUS                 PORTS                                         NAMES
+            d4888957c145   yushin1402/aws-cloudnative-webapp-backend-for-frontend   "/bin/sh -c 'java -j…"   48 minutes ago   Up 48 minutes          0.0.0.0:49425->8080/tcp, :::49425->8080/tcp   ecs-MA-saitoumsv-ecstask-public-5-aws-cloudnative-webapp-bff-c2e987d8b2bcd8c1d301
+                        </code></pre>
+                        <br><br>
+                        [コンテナログ]
+                        <br>
+                        <code><pre>
+            [root@ip-10-2-9-206 ecs]# docker logs d4888957c145
+            .   ____          _            __ _ _
+           /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+          ( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+           \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+            '  |____| .__|_| |_|_| |_\__, | / / / /
+           =========|_|==============|___/=/_/_/_/
+           :: Spring Boot ::                (v2.6.0)
+          
+          2021-12-04 22:55:30.130  INFO 1 --- [           main] c.e.b.c.BackendForFrontendApplication    : Starting BackendForFrontendApplication v0.0.1-SNAPSHOT using Java 1.8.0_312 on d4888957c145 with PID 1 (/usr/local/aws-cloudnative-webapp/backend-for-frontend/target/backend-for-frontend-0.0.1-SNAPSHOT.jar started by root in /)
+          2021-12-04 22:55:30.133  INFO 1 --- [           main] c.e.b.c.BackendForFrontendApplication    : The following profiles are active: production
+          2021-12-04 22:55:32.498  INFO 1 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port(s): 8080 (http)
+          2021-12-04 22:55:32.512  INFO 1 --- [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+          2021-12-04 22:55:32.512  INFO 1 --- [           main] org.apache.catalina.core.StandardEngine  : Starting Servlet engine: [Apache Tomcat/9.0.55]
+          2021-12-04 22:55:32.626  INFO 1 --- [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+          2021-12-04 22:55:32.626  INFO 1 --- [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 2386 ms
+          2021-12-04 22:55:33.801  INFO 1 --- [           main] o.s.b.a.w.s.WelcomePageHandlerMapping    : Adding welcome page: class path resource [static/index.html]
+          2021-12-04 22:55:34.100  INFO 1 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port(s): 8080 (http) with context path ''
+          2021-12-04 22:55:34.111  INFO 1 --- [           main] c.e.b.c.BackendForFrontendApplication    : Started BackendForFrontendApplication in 5.111 seconds (JVM running for 6.045)
+          2021-12-04 22:55:44.488  INFO 1 --- [nio-8080-exec-2] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+          2021-12-04 22:55:44.489  INFO 1 --- [nio-8080-exec-2] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+          2021-12-04 22:55:44.490  INFO 1 --- [nio-8080-exec-2] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+          2021-12-04 23:52:58.687  WARN 1 --- [io-8080-exec-10] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'POST' not supported]
+          2021-12-04 23:58:36.755  WARN 1 --- [nio-8080-exec-5] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'POST' not supported]
+                        </pre></code>
+                        <br><br>
+                        [ECSエージェントログ]
+                        <br>
+                        <code>/var/log/ecs/ecs-agent.log</code>にECSエージェントによるコンテナ起動ログが出力されている。ここを見るとDockerPullに失敗した、Dockerイメージからの起動に失敗した、そもそもECSインスタンスをクラスタに登録できていないなどのエラー原因の切り分けが出来る。
+                        <br><br>
+                        [ECSエージェント初期化ログ(あまり情報はないが、エージェントログに何もエラーがなかったら、初期化に失敗しているかも？)]
+                        <br>
+                        <pre><code>
+        2021-12-04T10:56:51Z [INFO] pre-start
+        2021-12-04T10:56:52Z [INFO] start
+        2021-12-04T10:56:52Z [INFO] No existing agent container to remove.
+        2021-12-04T10:56:52Z [INFO] Starting Amazon Elastic Container Service Agent
+                        </code></pre>
                     </ol></ul>
                 </ol>
             </p>
